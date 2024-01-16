@@ -21,4 +21,4 @@ RUN pip install --no-cache-dir croniter CloudFlare
 USER root
 
 # 定义容器启动时执行的命令
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
