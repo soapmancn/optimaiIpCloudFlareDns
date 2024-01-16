@@ -12,6 +12,10 @@ services:
     network_mode: host
     restart: always
     environment:
-      - TZ=Asia/Shanghai
-      - CRON_EXPRESSION=*/5 * * * *
+      - TZ="Asia/Shanghai"
+      - CRON_EXPRESSION="*/5 * * * *"
+      - EMAIL="xxxx@xxxx.com"
+      - TOKEN="8xxxxxxxxxxxxxxxxxxxxxxxaa"
+      - MAINDOMAIN="xxx.com"
+      - DOMAIN="xxx.xxx.com"
 ```

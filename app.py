@@ -21,20 +21,20 @@ def update_dns():
     print("IPv4 Addresses:")
     print(ip_address)
 
-    cf = CloudFlare(email='your_email@example.com', token='your_API_token')
+    cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
     # Get the zone_id for your domain
-    zones = cf.zones.get(params={'name': 'vlessworker1.soapmans.eu.org'})
+    zones = cf.zones.get(params={'name': os.environ.get("MAINDOMAIN")})
     zone_id = zones[0]['id']
     # Get the DNS records for your domain
     dns_records = cf.zones.dns_records.get(zone_id)
     # Update the IP address for appropriate DNS record
     for record in dns_records:
-        if record['name'] == 'vlessworker1.soapmans.eu.org' and record['type'] == 'A':
+        if record['name'] == os.environ.get("DOMAIN") and record['type'] == 'A':
             record_id = record['id']
             record_content = record['content']
             if record_content != ip_address:
                 print(f"原IP为: {record_content}")
-                data = {'type': 'A', 'name': 'vlessworker1.soapmans.eu.org', 'content': ip_address}
+                data = {'type': 'A', 'name': os.environ.get("DOMAIN"), 'content': ip_address}
                 cf.zones.dns_records.put(zone_id, record_id, data=data)
                 print(f"更新后IP为: {ip_address}")
             break
