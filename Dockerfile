@@ -18,9 +18,6 @@ RUN apt-get update && apt-get install -y \
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter CloudFlare
 
-# 指定时区
-RUN echo "Asia/Shanghai" > /etc/timezone && dpkg-reconfigure -f noninteractive tzdata
-
 # 切换到 root 用户
 USER root
 
