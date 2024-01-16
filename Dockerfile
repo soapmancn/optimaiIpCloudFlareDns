@@ -6,6 +6,8 @@ WORKDIR /app
 
 # 将本地的 Python 脚本复制到容器中
 COPY app.py /app/
+COPY optimal_ip.sh /app/
+RUN chmod +x /app/optimal_ip.sh
 
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter requests
