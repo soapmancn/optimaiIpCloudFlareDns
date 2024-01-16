@@ -8,7 +8,7 @@ WORKDIR /app
 COPY app.py /app/
 
 # 安装脚本所需的依赖
-RUN pip install --no-cache-dir croniter
+RUN pip install --no-cache-dir croniter requests
 
 # 定义容器启动时执行的命令
 CMD ["python", "app.py"]
