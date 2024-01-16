@@ -2,52 +2,42 @@ import os
 from croniter import croniter
 import time
 import subprocess
-import re
-import requests
+from CloudFlare import CloudFlare
 
 
 def update_dns():
     # 读取文件内容
-    file_path = "path/to/your/file.txt"
-    with open(file_path, 'r') as file:
-        content = file.read()
-
-    # 使用正则表达式提取IPv4地址
-    ipv4_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', content)
+    file_path = "/cloudflare/cf_result.txt"
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+        # 获取第二行的数据
+        second_line = lines[1]
+        # 分割每个字段
+        fields = second_line.split(',')
+        # 获取 IP 地址
+        ip_address = fields[0]
 
     # 打印提取到的IPv4地址
     print("IPv4 Addresses:")
-    for ip_address in ipv4_addresses:
-        print(ip_address)
+    print(ip_address)
 
-    # Cloudflare API 相关配置
-    cloudflare_api_key = "your_cloudflare_api_key"
-    cloudflare_email = "your_cloudflare_email"
-    zone_id = "your_cloudflare_zone_id"
-    dns_record_id = "your_dns_record_id"
-
-    # 更新 CDN 记录
-    for ip_address in ipv4_addresses:
-        api_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{dns_record_id}"
-        headers = {
-            "X-Auth-Key": cloudflare_api_key,
-            "X-Auth-Email": cloudflare_email,
-            "Content-Type": "application/json"
-        }
-        data = {
-            "type": "A",
-            "name": "your.domain.com",  # 替换为你的域名
-            "content": ip_address,
-            "ttl": 120,  # 根据需要设置 TTL
-            "proxied": True
-        }
-
-        # 发送更新请求
-        response = requests.put(api_url, json=data, headers=headers)
-        if response.status_code == 200:
-            print(f"DNS record updated successfully for IP: {ip_address}")
-        else:
-            print(f"Failed to update DNS record for IP: {ip_address}, Status Code: {response.status_code}")
+    cf = CloudFlare(email='your_email@example.com', token='your_API_token')
+    # Get the zone_id for your domain
+    zones = cf.zones.get(params={'name': 'vlessworker1.soapmans.eu.org'})
+    zone_id = zones[0]['id']
+    # Get the DNS records for your domain
+    dns_records = cf.zones.dns_records.get(zone_id)
+    # Update the IP address for appropriate DNS record
+    for record in dns_records:
+        if record['name'] == 'vlessworker1.soapmans.eu.org' and record['type'] == 'A':
+            record_id = record['id']
+            record_content = record['content']
+            if record_content != ip_address:
+                print(f"原IP为: {record_content}")
+                data = {'type': 'A', 'name': 'vlessworker1.soapmans.eu.org', 'content': ip_address}
+                cf.zones.dns_records.put(zone_id, record_id, data=data)
+                print(f"更新后IP为: {ip_address}")
+            break
 
 
 def optimal_ip():
@@ -61,7 +51,8 @@ def optimal_ip():
     except subprocess.CalledProcessError as e:
         print(f"Error executing shell script: {e}")
 
-    # update_dns()
+    # 更新DNS
+    update_dns()
 
 
 def my_task():

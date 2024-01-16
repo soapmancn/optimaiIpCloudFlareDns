@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     iproute2
 
 # 安装脚本所需的依赖
-RUN pip install --no-cache-dir croniter requests
+RUN pip install --no-cache-dir croniter CloudFlare
 
 # 切换到 root 用户
 USER root
