@@ -11,7 +11,8 @@ RUN chmod +x /app/optimal_ip.sh
 
 RUN apt-get update && apt-get install -y \
     curl \
-    wget
+    wget \
+    ip
 
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter requests
