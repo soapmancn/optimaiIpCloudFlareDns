@@ -9,8 +9,15 @@ COPY app.py /app/
 COPY optimal_ip.sh /app/
 RUN chmod +x /app/optimal_ip.sh
 
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget
+
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter requests
+
+# 切换到 root 用户
+USER root
 
 # 定义容器启动时执行的命令
 CMD ["python", "app.py"]
