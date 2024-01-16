@@ -9,6 +9,7 @@ COPY app.py /app/
 COPY optimal_ip.sh /app/
 RUN chmod +x /app/optimal_ip.sh
 
+# 安装软件包
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -16,6 +17,9 @@ RUN apt-get update && apt-get install -y \
 
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter CloudFlare
+
+# 指定时区
+RUN echo "Asia/Shanghai" > /etc/timezone && dpkg-reconfigure -f noninteractive tzdata
 
 # 切换到 root 用户
 USER root
