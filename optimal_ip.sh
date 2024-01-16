@@ -23,9 +23,9 @@ if [[ ! -f "CloudflareST" || ${version} != ${old_version} ]]; then
   # 新的默认网关IP
   new_gateway="192.168.31.111"
   # 删除当前默认网关
-  sudo ip route del default
+  ip route del default
   # 添加新的默认网关
-  sudo ip route add default via $new_gateway
+  ip route add default via $new_gateway
   echo "默认网关已更改为: $new_gateway"
 
 	rm -rf CloudflareST_linux_${tag}.tar.gz
@@ -37,9 +37,9 @@ if [[ ! -f "CloudflareST" || ${version} != ${old_version} ]]; then
 	# 新的默认网关IP
   new_gateway="192.168.31.1"
   # 删除当前默认网关
-  sudo ip route del default
+  ip route del default
   # 添加新的默认网关
-  sudo ip route add default via $new_gateway
+  ip route add default via $new_gateway
   echo "默认网关已更改为: $new_gateway"
 fi
 
