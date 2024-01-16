@@ -15,6 +15,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     iproute2
 
+# 指定时区
+RUN echo "Asia/Shanghai" > /etc/timezone &&\
+dpkg-reconfigure -f noninteractive tzdata
+
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter CloudFlare
 
