@@ -33,7 +33,7 @@ new_gateway="192.168.31.1"
 ip route change default via $new_gateway
 echo "默认网关已更改为: $new_gateway"
 
-./CloudflareST -tll 40 -tl 200 -n 400 -dd -url https://speedtest.soapmans.eu.org -o cf_result.txt
+./CloudflareST -tll 40 -tl 200 -n 400 -url https://speedtest.soapmans.eu.org -o cf_result.txt
 
 # 新的默认网关IP
 new_gateway="192.168.31.111"
