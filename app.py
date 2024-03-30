@@ -16,11 +16,17 @@ def update_dns():
         fields = second_line.split(',')
         # 获取 IP 地址
         ip_address = fields[0]
+        # 获取测试到的速度
+        speed_url = fields[5]
 
-    # 打印提取到的IPv4地址
-    print("IPv4 Addresses:")
-    print(ip_address)
+    # 打印提取到的IPv4地址及对应速度
+    print(f"IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
 
+    # 速度为0 则不更新DNS 退出
+    if speed_url == "0.00":
+        return
+    # 更新DNS记录
+    print(f"---开始更新DNS记录---")
     cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
     # Get the zone_id for your domain
     zones = cf.zones.get(params={'name': os.environ.get("MAINDOMAIN")})
@@ -37,6 +43,7 @@ def update_dns():
                 data = {'type': 'A', 'name': os.environ.get("DOMAIN"), 'content': ip_address}
                 cf.zones.dns_records.put(zone_id, record_id, data=data)
                 print(f"更新后IP为: {ip_address}")
+                print(f"---结束更新DNS记录---")
             break
 
 
