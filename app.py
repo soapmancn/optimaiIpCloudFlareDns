@@ -3,6 +3,36 @@ from croniter import croniter
 import time
 import subprocess
 from CloudFlare import CloudFlare
+import mysql.connector
+from datetime import datetime
+
+
+def insert_update(record_content, ip_address, speed_url):
+    try:
+        print(f"---开始插入数据---")
+        # 建立数据库连接
+        conn = mysql.connector.connect(
+            host=os.environ.get("MYSQLHOST"),
+            user=os.environ.get("MYSQLROOT"),
+            password=os.environ.get("MYSQLPASSWORD"),
+            database=os.environ.get("MYSQLDB")
+        )
+        # 创建游标对象
+        cursor = conn.cursor()
+        # 获取当前日期和时间
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # 插入一条记录
+        sql = "INSERT INTO cf_ips (update_date, previous_ip, updated_ip, speed_test) VALUES (%s, %s, %s, %s)"
+        values = (now, record_content, ip_address, speed_url+"MB/S")
+        cursor.execute(sql, values)
+        # 提交更改
+        conn.commit()
+        # 关闭游标和连接
+        cursor.close()
+        conn.close()
+        print(f"---结束插入数据---")
+    except Exception as e:
+        print(f"Error executing insert_update: {e}")
 
 
 def update_dns():
@@ -44,6 +74,7 @@ def update_dns():
                 cf.zones.dns_records.put(zone_id, record_id, data=data)
                 print(f"更新后IP为: {ip_address}")
                 print(f"---结束更新DNS记录---")
+                insert_update(record_content, ip_address, speed_url)
             break
 
 

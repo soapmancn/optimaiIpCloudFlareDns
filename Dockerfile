@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y tzdata
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
 
 # 安装脚本所需的依赖
-RUN pip install --no-cache-dir croniter CloudFlare
+RUN pip install --no-cache-dir croniter CloudFlare mysql mysql-connector-python
 
 # 切换到 root 用户
 USER root
