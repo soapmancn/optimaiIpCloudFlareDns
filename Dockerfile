@@ -11,6 +11,7 @@ RUN chmod +x /app/optimal_ip.sh
 
 # 安装软件包
 RUN apt-get update && apt-get install -y \
+    unzip \
     curl \
     wget \
     iproute2
