@@ -27,6 +27,22 @@ if [[ ! -f "CloudflareST" || ${version} != ${old_version} ]]; then
 	chmod +x CloudflareST
 fi
 
+# 请求接口并下载zip文件
+wget https://zip.baipiao.eu.org -O temp.zip
+# 解压zip文件
+unzip temp.zip -d temp_folder
+# 清除之前可能存在的输出文件
+rm -f ip_best_*.txt
+# 合并所有txt文件内容并根据文件名中的数字部分分类到不同的文件中，并去除重复IP
+for file in temp_folder/*.txt; do
+    num=$(echo "$file" | grep -oP '(?<=-)\d+(?=-)')
+    cat "$file" | sort | uniq >> "ip_best_${num}.txt"
+done
+# 清理临时文件
+rm temp.zip
+rm -rf temp_folder
+echo "合并完成，并根据文件名中的数字部分分类到不同文件中，并去除重复IP"
+
 # 新的默认网关IP
 new_gateway="192.168.31.1"
 # 更新默认网关
@@ -37,7 +53,9 @@ echo "默认网关已更改为: $new_gateway"
 speed_url=$SPEEDURL
 echo "测速地址为：${speed_url}"
 
-./CloudflareST -tll 40 -tl 200 -n 400 -url "${speed_url}" -o cf_result.txt
+./CloudflareST -tll 40 -tl 200 -n 400 -sl 10 -dn 10 -url "${speed_url}" -o cf_result.txt
+
+./CloudflareST -f ip_best_1.txt -tll 10 -tl 90 -sl 2 -dn 3 -n 400 -url "${speed_url}" -o cf_result_1.txt
 
 # 新的默认网关IP
 new_gateway="192.168.31.111"

@@ -35,6 +35,8 @@ def insert_update(record_content, ip_address, speed_url):
         conn.close()
         print(f"---结束插入数据---")
     except Exception as e:
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"优选结果插入mysql异常")
         print(f"Error executing insert_update: {e}")
 
 
@@ -59,6 +61,8 @@ def update_dns():
     file_path = "/cloudflare/cf_result.txt"
     with open(file_path, 'r') as f:
         lines = f.readlines()
+        if len(lines) < 2:
+            return
         # 获取第二行的数据
         second_line = lines[1]
         # 分割每个字段
@@ -72,13 +76,9 @@ def update_dns():
     print(f"IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
     # 开启实时通知
     if os.environ.get("PUSH_SWITCH") == "Y":
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"优选结果: ${ip_address} - ${speed_url}")
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"优选结果: ${ip_address} - ${speed_url}")
 
-    # 速度为0 则不更新DNS 退出
-    if speed_url == "0.00":
-        # 发送通知
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"优选失败！: ${ip_address} - ${speed_url}")
-        return
     # 更新DNS记录
     print(f"---开始更新DNS记录---")
     cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
@@ -111,12 +111,16 @@ def optimal_ip():
         subprocess.run(shell_command, shell=True, check=True)
         print("Command executed successfully")
     except subprocess.CalledProcessError as e:
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"优选脚本optimal_ip执行异常")
         print(f"Error executing shell script: {e}")
 
     # 更新DNS
     try:
         update_dns()
     except Exception as e:
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"update_dns执行异常")
         print(f"update_dns Error: {e}")
 
 
@@ -158,11 +162,48 @@ def cfyes_optimal():
                 cfyes_count += 1
             print(f"---结束更新cfyes DNS记录---")
             if os.environ.get("PUSH_SWITCH") == "Y":
-                send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"cfyes优选结果: ${data_ips}")
+                send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                                      f"cfyes优选结果: ${data_ips}")
         else:
             print(f"cfyes_optimal Error: {response.text}")
     except Exception as e:
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"cfyes_optimal异常")
         print(f"cfyes_optimal Error: {e}")
+
+
+def cfbest_optimal():
+    try:
+        # 读取文件内容
+        file_path = "/cloudflare/cf_result_1.txt"
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) < 2:
+                return
+            # 获取第二行的数据
+            second_line = lines[1]
+            # 分割每个字段
+            fields = second_line.split(',')
+            # 获取 IP 地址
+            ip_address = fields[0]
+            # 获取测试到的速度
+            speed_url = fields[5]
+
+        # 打印提取到的IPv4地址及对应速度
+        print(f"cfbest_optimal IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
+        # 开启实时通知
+        if os.environ.get("PUSH_SWITCH") == "Y":
+            send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                                  f"cfbest_optimal优选结果: ${ip_address} - ${speed_url}")
+
+        # 更新DNS记录
+        print(f"---开始更新cfbestDNS记录---")
+        cf_dns_update('cfbest.soapmans.eu.org', ip_address)
+        print(f"---结束更新cfbestDNS记录---")
+    except Exception as e:
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
+                              f"cfbest_optimal异常")
+        print(f"cfbest_optimal 异常")
 
 
 def my_task():
@@ -173,6 +214,10 @@ def my_task():
     print("cfyes 开始获取优选......")
     cfyes_optimal()
     print("cfyes 优选完成......")
+
+    print("cfbest 开始优选....")
+    cfbest_optimal()
+    print("cfbest 开始优选....")
 
 
 # Docker 环境变量获取 cron 表达式，默认为每隔5分钟执行一次
