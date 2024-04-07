@@ -28,7 +28,7 @@ if [[ ! -f "CloudflareST" || ${version} != ${old_version} ]]; then
 fi
 
 # 请求接口并下载zip文件
-wget https://zip.baipiao.eu.org -O temp.zip
+curl -o temp.zip https://zip.baipiao.eu.org
 # 解压zip文件
 unzip temp.zip -d temp_folder
 # 清除之前可能存在的输出文件
