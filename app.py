@@ -1,3 +1,4 @@
+import json
 import os
 
 import requests
@@ -113,13 +114,65 @@ def optimal_ip():
         print(f"Error executing shell script: {e}")
 
     # 更新DNS
-    update_dns()
+    try:
+        update_dns()
+    except Exception as e:
+        print(f"update_dns Error: {e}")
+
+
+def cf_dns_update(subdomain, ip_address):
+    cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
+    # Get the zone_id for your domain
+    zones = cf.zones.get(params={'name': os.environ.get("MAINDOMAIN")})
+    zone_id = zones[0]['id']
+    # Get the DNS records for your domain
+    dns_records = cf.zones.dns_records.get(zone_id)
+    # Update the IP address for appropriate DNS record
+    for record in dns_records:
+        if record['name'] == subdomain and record['type'] == 'A':
+            record_id = record['id']
+            record_content = record['content']
+            if record_content != ip_address:
+                print(f"原IP为: {record_content}")
+                data = {'type': 'A', 'name': subdomain, 'content': ip_address}
+                cf.zones.dns_records.put(zone_id, record_id, data=data)
+                print(f"更新后IP为: {ip_address}")
+            break
+
+
+def cfyes_optimal():
+    try:
+        print(f"cfyes_optimal start...")
+        url = "https://api.hostmonit.com/get_optimization_ip"
+        payload = {
+            "key": "iDetkOys"
+        }
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            parsed_data = json.loads(response.content)
+            data_ips = [node_info['ip'] for node_info in parsed_data['info'] if node_info['node'] == 'QYZJBGP']
+            cfyes_count = 1
+            print(f"---开始更新cfyes DNS记录---")
+            for ip in data_ips:
+                cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
+                cfyes_count += 1
+            print(f"---结束更新cfyes DNS记录---")
+            if os.environ.get("PUSH_SWITCH") == "Y":
+                send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"cfyes优选结果: ${data_ips}")
+        else:
+            print(f"cfyes_optimal Error: {response.text}")
+    except Exception as e:
+        print(f"cfyes_optimal Error: {e}")
 
 
 def my_task():
     print("Running my task......")
     optimal_ip()
     print("Running task successfully")
+
+    print("cfyes 开始获取优选......")
+    cfyes_optimal()
+    print("cfyes 优选完成......")
 
 
 # Docker 环境变量获取 cron 表达式，默认为每隔5分钟执行一次
