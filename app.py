@@ -1,4 +1,6 @@
 import os
+
+import requests
 from croniter import croniter
 import time
 import subprocess
@@ -23,7 +25,7 @@ def insert_update(record_content, ip_address, speed_url):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         # 插入一条记录
         sql = "INSERT INTO cf_ips (update_date, previous_ip, updated_ip, speed_test) VALUES (%s, %s, %s, %s)"
-        values = (now, record_content, ip_address, speed_url+"MB/S")
+        values = (now, record_content, ip_address, speed_url + "MB/S")
         cursor.execute(sql, values)
         # 提交更改
         conn.commit()
@@ -33,6 +35,22 @@ def insert_update(record_content, ip_address, speed_url):
         print(f"---结束插入数据---")
     except Exception as e:
         print(f"Error executing insert_update: {e}")
+
+
+def send_telegram_message(bot_token, chat_id, message):
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message
+        }
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print("Message sent successfully!")
+        else:
+            print(f"Failed to send message. Error: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send message. Error: {e.response}")
 
 
 def update_dns():
@@ -51,9 +69,14 @@ def update_dns():
 
     # 打印提取到的IPv4地址及对应速度
     print(f"IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
+    # 开启实时通知
+    if os.environ.get("PUSH_SWITCH") == "Y":
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"优选结果: ${ip_address} - ${speed_url}")
 
     # 速度为0 则不更新DNS 退出
     if speed_url == "0.00":
+        # 发送通知
+        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), f"优选失败！: ${ip_address} - ${speed_url}")
         return
     # 更新DNS记录
     print(f"---开始更新DNS记录---")
