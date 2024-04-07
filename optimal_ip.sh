@@ -55,7 +55,13 @@ echo "测速地址为：${speed_url}"
 
 ./CloudflareST -tll 40 -tl 200 -n 400 -sl 10 -dn 10 -url "${speed_url}" -o cf_result.txt
 
+# 延时2分钟
+sleep 120
+
 ./CloudflareST -f ip_best_1.txt -tll 10 -tl 90 -sl 3 -dn 3 -n 400 -url "${speed_url}" -o cf_result_1.txt
+
+# 延时2分钟
+sleep 120
 
 ./CloudflareST -f ip_best_0.txt -tll 10 -tl 90 -sl 3 -dn 3 -n 400 -url "${speed_url}" -o cf_result_0.txt
 
