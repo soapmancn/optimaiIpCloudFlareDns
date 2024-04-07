@@ -189,16 +189,32 @@ def cfbest_optimal():
             # 获取测试到的速度
             speed_url = fields[5]
 
+        # 读取文件内容
+        file_path2 = "/cloudflare/cf_result_0.txt"
+        with open(file_path2, 'r') as f2:
+            lines2 = f2.readlines()
+            if len(lines2) < 2:
+                return
+            # 获取第二行的数据
+            second_line2 = lines2[1]
+            # 分割每个字段
+            fields2 = second_line2.split(',')
+            # 获取 IP 地址
+            ip_address2 = fields2[0]
+            # 获取测试到的速度
+            speed_url2 = fields2[5]
+
         # 打印提取到的IPv4地址及对应速度
-        print(f"cfbest_optimal IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
+        print(f"cfbest_optimal IPv4 Addresses & Speed: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}")
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
             send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                                  f"cfbest_optimal优选结果: ${ip_address} - ${speed_url}")
+                                  f"cfbest_optimal优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}")
 
         # 更新DNS记录
         print(f"---开始更新cfbestDNS记录---")
         cf_dns_update('cfbest.soapmans.eu.org', ip_address)
+        cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
         print(f"---结束更新cfbestDNS记录---")
     except Exception as e:
         send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),

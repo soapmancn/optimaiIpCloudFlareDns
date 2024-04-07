@@ -55,7 +55,9 @@ echo "测速地址为：${speed_url}"
 
 ./CloudflareST -tll 40 -tl 200 -n 400 -sl 10 -dn 10 -url "${speed_url}" -o cf_result.txt
 
-./CloudflareST -f ip_best_1.txt -tll 10 -tl 90 -sl 2 -dn 3 -n 400 -url "${speed_url}" -o cf_result_1.txt
+./CloudflareST -f ip_best_1.txt -tll 10 -tl 90 -sl 3 -dn 3 -n 400 -url "${speed_url}" -o cf_result_1.txt
+
+./CloudflareST -f ip_best_0.txt -tll 10 -tl 90 -sl 3 -dn 3 -n 400 -url "${speed_url}" -o cf_result_0.txt
 
 # 新的默认网关IP
 new_gateway="192.168.31.111"
