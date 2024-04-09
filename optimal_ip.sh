@@ -41,7 +41,6 @@ done
 # 清理临时文件
 rm temp.zip
 rm -rf temp_folder
-echo "合并完成，并根据文件名中的数字部分分类到不同文件中，并去除重复IP"
 
 # 新的默认网关IP
 new_gateway="192.168.31.1"

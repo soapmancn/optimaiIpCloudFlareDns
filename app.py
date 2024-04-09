@@ -12,7 +12,6 @@ from datetime import datetime
 
 def insert_update(record_content, ip_address, speed_url):
     try:
-        print(f"---开始插入数据---")
         # 建立数据库连接
         conn = mysql.connector.connect(
             host=os.environ.get("MYSQLHOST"),
@@ -33,10 +32,7 @@ def insert_update(record_content, ip_address, speed_url):
         # 关闭游标和连接
         cursor.close()
         conn.close()
-        print(f"---结束插入数据---")
     except Exception as e:
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"优选结果插入mysql异常")
         print(f"Error executing insert_update: {e}")
 
 
@@ -48,15 +44,11 @@ def send_telegram_message(bot_token, chat_id, message):
             "text": message
         }
         response = requests.post(url, json=payload)
-        if response.status_code == 200:
-            print("Message sent successfully!")
-        else:
-            print(f"Failed to send message. Error: {response.text}")
     except requests.exceptions.RequestException as e:
-        print(f"Failed to send message. Error: {e.response}")
+        print(f"发送消息异常: {e.response}")
 
 
-def update_dns():
+def update_dns(message):
     # 读取文件内容
     file_path = "/cloudflare/cf_result.txt"
     with open(file_path, 'r') as f:
@@ -72,15 +64,14 @@ def update_dns():
         # 获取测试到的速度
         speed_url = fields[5]
 
-    # 打印提取到的IPv4地址及对应速度
-    print(f"IPv4 Addresses & Speed: ${ip_address} - ${speed_url}")
     # 开启实时通知
     if os.environ.get("PUSH_SWITCH") == "Y":
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"优选结果: ${ip_address} - ${speed_url}")
+        message += f"优选IP结果：${ip_address} - ${speed_url}\n"
+
+    if {speed_url} == "0.00":
+        return
 
     # 更新DNS记录
-    print(f"---开始更新DNS记录---")
     cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
     # Get the zone_id for your domain
     zones = cf.zones.get(params={'name': os.environ.get("MAINDOMAIN")})
@@ -93,35 +84,26 @@ def update_dns():
             record_id = record['id']
             record_content = record['content']
             if record_content != ip_address:
-                print(f"原IP为: {record_content}")
                 data = {'type': 'A', 'name': os.environ.get("DOMAIN"), 'content': ip_address}
                 cf.zones.dns_records.put(zone_id, record_id, data=data)
-                print(f"更新后IP为: {ip_address}")
-                print(f"---结束更新DNS记录---")
                 insert_update(record_content, ip_address, speed_url)
             break
 
 
-def optimal_ip():
+def optimal_ip(message):
     # 定义要执行的 shell 命令或脚本
     shell_command = "./optimal_ip.sh"
 
     # 使用 subprocess 运行 shell 命令
     try:
         subprocess.run(shell_command, shell=True, check=True)
-        print("Command executed successfully")
     except subprocess.CalledProcessError as e:
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"优选脚本optimal_ip执行异常")
-        print(f"Error executing shell script: {e}")
-
+        message += "优选IP脚本异常\n"
     # 更新DNS
     try:
-        update_dns()
+        update_dns(message)
     except Exception as e:
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"update_dns执行异常")
-        print(f"update_dns Error: {e}")
+        message += "优选IP更新DNS异常"
 
 
 def cf_dns_update(subdomain, ip_address):
@@ -144,9 +126,8 @@ def cf_dns_update(subdomain, ip_address):
             break
 
 
-def cfyes_optimal():
+def cfyes_optimal(message):
     try:
-        print(f"cfyes_optimal start...")
         url = "https://api.hostmonit.com/get_optimization_ip"
         payload = {
             "key": "iDetkOys"
@@ -156,23 +137,16 @@ def cfyes_optimal():
             parsed_data = json.loads(response.content)
             data_ips = [node_info['ip'] for node_info in parsed_data['info'] if node_info['node'] == 'QYZJBGP']
             cfyes_count = 1
-            print(f"---开始更新cfyes DNS记录---")
             for ip in data_ips:
                 cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
                 cfyes_count += 1
-            print(f"---结束更新cfyes DNS记录---")
             if os.environ.get("PUSH_SWITCH") == "Y":
-                send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                                      f"cfyes优选结果: ${data_ips}")
-        else:
-            print(f"cfyes_optimal Error: {response.text}")
+                message += f"cfYes优选结果：${data_ips}\n"
     except Exception as e:
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"cfyes_optimal异常")
-        print(f"cfyes_optimal Error: {e}")
+        message += f"cfYes优选异常\n"
 
 
-def cfbest_optimal():
+def cfbest_optimal(message):
     try:
         # 读取文件内容
         file_path = "/cloudflare/cf_result_1.txt"
@@ -205,35 +179,40 @@ def cfbest_optimal():
             speed_url2 = fields2[5]
 
         # 打印提取到的IPv4地址及对应速度
-        print(f"cfbest_optimal IPv4 Addresses & Speed: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}")
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                                  f"cfbest_optimal优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}")
+            message += f"cfBest优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}\n"
 
         # 更新DNS记录
-        print(f"---开始更新cfbestDNS记录---")
-        cf_dns_update('cfbest.soapmans.eu.org', ip_address)
-        cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
-        print(f"---结束更新cfbestDNS记录---")
+        if {speed_url} != "0.00":
+            cf_dns_update('cfbest.soapmans.eu.org', ip_address)
+        if {speed_url2} != "0.00":
+            cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
     except Exception as e:
-        send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"),
-                              f"cfbest_optimal异常")
-        print(f"cfbest_optimal 异常")
+        message += f"cfBest优选异常\n"
 
 
 def my_task():
-    print("Running my task......")
-    optimal_ip()
-    print("Running task successfully")
+    message = "\n😀优选IP已完成\n"
 
-    print("cfyes 开始获取优选......")
-    cfyes_optimal()
-    print("cfyes 优选完成......")
+    print("---Running my task---")
+    print("---开始IP优选---")
+    optimal_ip(message)
+    print("---结束IP优选---")
 
-    print("cfbest 开始优选....")
-    cfbest_optimal()
-    print("cfbest 开始优选....")
+    print("---开始cfYes优选---")
+    cfyes_optimal(message)
+    print("---结束cfYes优选---")
+
+    print("---开始cfBest优选---")
+    cfbest_optimal(message)
+    print("---结束cfBest优选---")
+
+    print("---开始发送消息---")
+    send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), message)
+    print("---结束发送消息---")
+
+    print("---Running task successfully---")
 
 
 # Docker 环境变量获取 cron 表达式，默认为每隔5分钟执行一次
