@@ -56,7 +56,7 @@ def optimal_ip(message):
     try:
         subprocess.run(shell_command, shell=True, check=True)
     except subprocess.CalledProcessError as e:
-        message.append("😔IP筛选脚本运行异常\n\n")
+        message.append("😔IP筛选脚本运行异常")
 
 
 def cf_dns_update(subdomain, ip_address):
@@ -94,7 +94,8 @@ def cfyes_optimal(message):
                 cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
                 cfyes_count += 1
             if os.environ.get("PUSH_SWITCH") == "Y":
-                message.append(f"😍cfYes优选结果：${data_ips}\n\n")
+                data_ips_res = " ".join(data_ips)
+                message.append(f"😍cfYes优选结果：{data_ips_res}")
     except Exception as e:
         print(f"cfYes优选异常:{e}")
 
@@ -134,7 +135,7 @@ def cfbest_optimal(message):
         # 打印提取到的IPv4地址及对应速度
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍cfBest优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}\n\n")
+            message.append(f"😍cfBest优选结果: {ip_address}-{speed_url}  {ip_address2}-{speed_url2}")
 
         # 更新DNS记录
         if {speed_url} != "0.00":
@@ -164,7 +165,7 @@ def cfip_optimal(message):
 
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍IP优选结果：${ip_address} - ${speed_url}\n\n")
+            message.append(f"😍IP优选结果：{ip_address} - {speed_url}")
 
         if {speed_url} == "0.00":
             return
@@ -176,29 +177,30 @@ def cfip_optimal(message):
 
 
 def my_task():
-    message = ["😀优选IP已完成\n"]
+    message = ["🎉优选IP已完成"]
 
-    print("---Running my task---\n\n")
+    print("---Running my task---\n")
     print("---开始运行IP筛选脚本---")
     optimal_ip(message)
-    print("---结束运行IP筛选脚本---\n\n")
+    print("---结束运行IP筛选脚本---\n")
 
     print("---开始IP优选DNS---")
     cfip_optimal(message)
-    print("---结束IP优选DNS---\n\n")
+    print("---结束IP优选DNS---\n")
 
     print("---开始cfYes优选---")
     cfyes_optimal(message)
-    print("---结束cfYes优选---\n\n")
+    print("---结束cfYes优选---\n")
 
     print("---开始cfBest优选---")
     cfbest_optimal(message)
-    print("---结束cfBest优选---\n\n")
+    print("---结束cfBest优选---\n")
 
     print("---开始发送消息---")
-    print(message)
-    send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), message)
-    print("---结束发送消息---\n\n")
+    message_res = "\n".join(message)
+    print(message_res)
+    send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), message_res)
+    print("---结束发送消息---\n")
 
     print("---Running task successfully---")
 
