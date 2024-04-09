@@ -48,48 +48,6 @@ def send_telegram_message(bot_token, chat_id, message):
         print(f"发送消息异常: {e.response}")
 
 
-def update_dns(message):
-    # 读取文件内容
-    file_path = "/cloudflare/cf_result.txt"
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-        if len(lines) < 2:
-            return
-        # 获取第二行的数据
-        second_line = lines[1]
-        # 分割每个字段
-        fields = second_line.split(',')
-        # 获取 IP 地址
-        ip_address = fields[0]
-        # 获取测试到的速度
-        speed_url = fields[5]
-
-    # 开启实时通知
-    if os.environ.get("PUSH_SWITCH") == "Y":
-        message += f"优选IP结果：${ip_address} - ${speed_url}\n"
-
-    if {speed_url} == "0.00":
-        return
-
-    # 更新DNS记录
-    cf = CloudFlare(email=os.environ.get("EMAIL"), token=os.environ.get("TOKEN"))
-    # Get the zone_id for your domain
-    zones = cf.zones.get(params={'name': os.environ.get("MAINDOMAIN")})
-    zone_id = zones[0]['id']
-    # Get the DNS records for your domain
-    dns_records = cf.zones.dns_records.get(zone_id)
-    # Update the IP address for appropriate DNS record
-    for record in dns_records:
-        if record['name'] == os.environ.get("DOMAIN") and record['type'] == 'A':
-            record_id = record['id']
-            record_content = record['content']
-            if record_content != ip_address:
-                data = {'type': 'A', 'name': os.environ.get("DOMAIN"), 'content': ip_address}
-                cf.zones.dns_records.put(zone_id, record_id, data=data)
-                insert_update(record_content, ip_address, speed_url)
-            break
-
-
 def optimal_ip(message):
     # 定义要执行的 shell 命令或脚本
     shell_command = "./optimal_ip.sh"
@@ -98,12 +56,7 @@ def optimal_ip(message):
     try:
         subprocess.run(shell_command, shell=True, check=True)
     except subprocess.CalledProcessError as e:
-        message += "优选IP脚本异常\n"
-    # 更新DNS
-    try:
-        update_dns(message)
-    except Exception as e:
-        message += "优选IP更新DNS异常"
+        message.append("😔IP筛选脚本运行异常\n\n")
 
 
 def cf_dns_update(subdomain, ip_address):
@@ -141,9 +94,9 @@ def cfyes_optimal(message):
                 cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
                 cfyes_count += 1
             if os.environ.get("PUSH_SWITCH") == "Y":
-                message += f"cfYes优选结果：${data_ips}\n"
+                message.append(f"😍cfYes优选结果：${data_ips}\n\n")
     except Exception as e:
-        message += f"cfYes优选异常\n"
+        print(f"cfYes优选异常:{e}")
 
 
 def cfbest_optimal(message):
@@ -181,7 +134,7 @@ def cfbest_optimal(message):
         # 打印提取到的IPv4地址及对应速度
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            message += f"cfBest优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}\n"
+            message.append(f"😍cfBest优选结果: ${ip_address} - ${speed_url}   ${ip_address2} - ${speed_url2}\n\n")
 
         # 更新DNS记录
         if {speed_url} != "0.00":
@@ -189,28 +142,63 @@ def cfbest_optimal(message):
         if {speed_url2} != "0.00":
             cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
     except Exception as e:
-        message += f"cfBest优选异常\n"
+        print(f"cfBest优选异常:{e}")
+
+
+def cfip_optimal(message):
+    try:
+        # 读取文件内容
+        file_path = "/cloudflare/cf_result.txt"
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) < 2:
+                return
+            # 获取第二行的数据
+            second_line = lines[1]
+            # 分割每个字段
+            fields = second_line.split(',')
+            # 获取 IP 地址
+            ip_address = fields[0]
+            # 获取测试到的速度
+            speed_url = fields[5]
+
+        # 开启实时通知
+        if os.environ.get("PUSH_SWITCH") == "Y":
+            message.append(f"😍IP优选结果：${ip_address} - ${speed_url}\n\n")
+
+        if {speed_url} == "0.00":
+            return
+
+        # 更新DNS
+        cf_dns_update(os.environ.get("DOMAIN"), ip_address)
+    except Exception as e:
+        print(f"IP优选异常{e}")
 
 
 def my_task():
-    message = "\n😀优选IP已完成\n"
+    message = ["😀优选IP已完成\n"]
 
-    print("---Running my task---")
-    print("---开始IP优选---")
+    print("---Running my task---\n\n")
+    print("---开始运行IP筛选脚本---")
     optimal_ip(message)
-    print("---结束IP优选---")
+    print("---结束运行IP筛选脚本---\n\n")
+
+    print("---开始IP优选DNS---")
+    cfip_optimal(message)
+    print("---结束IP优选DNS---\n\n")
 
     print("---开始cfYes优选---")
     cfyes_optimal(message)
-    print("---结束cfYes优选---")
+    print("---结束cfYes优选---\n\n")
 
     print("---开始cfBest优选---")
     cfbest_optimal(message)
-    print("---结束cfBest优选---")
+    print("---结束cfBest优选---\n\n")
 
     print("---开始发送消息---")
+    print(message)
     send_telegram_message(os.environ.get("BOT_TOKEN"), os.environ.get("CHAT_ID"), message)
-    print("---结束发送消息---")
+    print("---结束发送消息---\n\n")
 
     print("---Running task successfully---")
 
