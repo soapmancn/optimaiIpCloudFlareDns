@@ -115,7 +115,7 @@ def cfbest_optimal(message):
             # 获取 IP 地址
             ip_address = fields[0]
             # 获取测试到的速度
-            speed_url = fields[5]
+            speed_url = fields[5].strip()
 
         # 读取文件内容
         file_path2 = "/cloudflare/cf_result_0.txt"
@@ -130,7 +130,7 @@ def cfbest_optimal(message):
             # 获取 IP 地址
             ip_address2 = fields2[0]
             # 获取测试到的速度
-            speed_url2 = fields2[5]
+            speed_url2 = fields2[5].strip()
 
         # 打印提取到的IPv4地址及对应速度
         # 开启实时通知
