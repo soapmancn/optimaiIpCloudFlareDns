@@ -94,8 +94,8 @@ def cfyes_optimal(message):
                 cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
                 cfyes_count += 1
             if os.environ.get("PUSH_SWITCH") == "Y":
-                data_ips_res = " ".join(data_ips)
-                message.append(f"😍cfYes优选结果：{data_ips_res}")
+                data_ips_res = "\n".join(data_ips)
+                message.append(f"😍cfyes优选结果\n{data_ips_res}")
     except Exception as e:
         print(f"cfYes优选异常:{e}")
 
@@ -135,7 +135,7 @@ def cfbest_optimal(message):
         # 打印提取到的IPv4地址及对应速度
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍cfBest优选结果: {ip_address}-{speed_url}  {ip_address2}-{speed_url2}")
+            message.append(f"😍cfBest优选结果\n{ip_address} - {speed_url}\n{ip_address2} - {speed_url2}")
 
         # 更新DNS记录
         if {speed_url} != "0.00":
@@ -161,11 +161,11 @@ def cfip_optimal(message):
             # 获取 IP 地址
             ip_address = fields[0]
             # 获取测试到的速度
-            speed_url = fields[5]
+            speed_url = fields[5].strip()
 
         # 开启实时通知
         if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍IP优选结果：{ip_address} - {speed_url}")
+            message.append(f"😍IP优选结果\n{ip_address} - {speed_url}")
 
         if {speed_url} == "0.00":
             return
@@ -177,20 +177,20 @@ def cfip_optimal(message):
 
 
 def my_task():
-    message = ["🎉优选IP已完成"]
+    message = ["🎉优选IP已完成\n"]
 
     print("---Running my task---\n")
     print("---开始运行IP筛选脚本---")
     optimal_ip(message)
     print("---结束运行IP筛选脚本---\n")
 
-    print("---开始IP优选DNS---")
-    cfip_optimal(message)
-    print("---结束IP优选DNS---\n")
-
     print("---开始cfYes优选---")
     cfyes_optimal(message)
     print("---结束cfYes优选---\n")
+
+    print("---开始IP优选DNS---")
+    cfip_optimal(message)
+    print("---结束IP优选DNS---\n")
 
     print("---开始cfBest优选---")
     cfbest_optimal(message)
