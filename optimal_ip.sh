@@ -15,7 +15,7 @@ else
 fi
 
 # 定义代理服务器地址、端口以及用户名和密码
-authProxy=$PROXIES
+authProxy=$https_proxy
 
 version=$(curl -x ${authProxy} -s https://api.github.com/repos/XIU2/CloudflareSpeedTest/tags | sed -n 's/.*"name": "\(.*\)".*/\1/p' | head -n 1)
 old_version=$(cat CloudflareST_version.txt )

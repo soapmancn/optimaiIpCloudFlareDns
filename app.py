@@ -43,7 +43,7 @@ def send_telegram_message(bot_token, chat_id, message):
             "chat_id": chat_id,
             "text": message
         }
-        response = requests.post(url, json=payload, proxies=os.environ.get("PROXIES"))
+        response = requests.post(url, json=payload, proxies=os.environ.get('https_proxy'))
     except requests.exceptions.RequestException as e:
         print(f"发送消息异常: {e.response}")
 
