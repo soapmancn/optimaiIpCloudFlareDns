@@ -14,22 +14,19 @@ else
 	exit 1
 fi
 
-# 定义代理服务器地址、端口以及用户名和密码
-authProxy=$https_proxy
-
-version=$(curl -x ${authProxy} -s https://api.github.com/repos/XIU2/CloudflareSpeedTest/tags | sed -n 's/.*"name": "\(.*\)".*/\1/p' | head -n 1)
+version=$(curl -s https://api.github.com/repos/XIU2/CloudflareSpeedTest/tags | sed -n 's/.*"name": "\(.*\)".*/\1/p' | head -n 1)
 old_version=$(cat CloudflareST_version.txt )
 
 if [[ ! -f "CloudflareST" || ${version} != ${old_version} ]]; then
 	rm -rf CloudflareST_linux_${tag}.tar.gz
-	wget -N -e use_proxy=yes -e http_proxy=${authProxy} https://github.com/XIU2/CloudflareSpeedTest/releases/download/${version}/CloudflareST_linux_${tag}.tar.gz
+	wget -N -e use_proxy=yes https://github.com/XIU2/CloudflareSpeedTest/releases/download/${version}/CloudflareST_linux_${tag}.tar.gz
 	echo "${version}" > CloudflareST_version.txt
 	tar -xvf CloudflareST_linux_${tag}.tar.gz
 	chmod +x CloudflareST
 fi
 
 # 请求接口并下载zip文件
-curl -x ${authProxy} -o temp.zip https://zip.baipiao.eu.org
+curl -o temp.zip https://zip.baipiao.eu.org
 # 解压zip文件
 unzip temp.zip -d temp_folder
 # 清除之前可能存在的输出文件
@@ -42,6 +39,12 @@ done
 # 清理临时文件
 rm temp.zip
 rm -rf temp_folder
+
+# 新的默认网关IP
+new_gateway="192.168.31.1"
+# 更新默认网关
+ip route change default via $new_gateway
+echo "默认网关已更改为: $new_gateway"
 
 # 打印系统环境变量配置的测速地址
 speed_url=$SPEEDURL
@@ -58,3 +61,9 @@ sleep 120
 sleep 120
 
 ./CloudflareST -f ip_best_0.txt -tll 10 -tl 90 -sl 3 -dn 3 -n 400 -url "${speed_url}" -o cf_result_0.txt
+
+# 新的默认网关IP
+new_gateway="192.168.31.111"
+# 更新默认网关
+ip route change default via $new_gateway
+echo "默认网关已更改为: $new_gateway"
