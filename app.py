@@ -1,5 +1,5 @@
-import json
 import os
+import subprocess
 
 import requests
 from croniter import croniter
@@ -39,24 +39,92 @@ def cf_dns_update(subdomain, ip_address):
             break
 
 
-def cf_optimal(message):
-    try:
-        url = "https://api.hostmonit.com/get_optimization_ip"
-        payload = {
-            "key": "iDetkOys"
-        }
-        response = requests.post(url, json=payload)
-        if response.status_code == 200:
-            data = json.loads(response.content)
-            max_speed_ip = max((entry for entry in data['info']
-                                if entry['node'] == 'QYZJBGP' and entry['ip'].startswith('104')),
-                               key=lambda x: x['speed'])['ip']
+def optimal_ip(message):
+    # 定义要执行的 shell 命令或脚本
+    shell_command = "./optimal_ip.sh"
 
-            cf_dns_update(f"cfyes1.soapmans.eu.org", max_speed_ip)
-            if os.environ.get("PUSH_SWITCH") == "Y":
-                message.append(f"😍cfyes优选结果\n{max_speed_ip}")
+    # 使用 subprocess 运行 shell 命令
+    try:
+        subprocess.run(shell_command, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        message.append("😔IP筛选脚本运行异常")
+
+
+def cfip_optimal(message):
+    try:
+        # 读取文件内容
+        file_path = "/cloudflare/cf_result.txt"
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) < 2:
+                return
+            # 获取第二行的数据
+            second_line = lines[1]
+            # 分割每个字段
+            fields = second_line.split(',')
+            # 获取 IP 地址
+            ip_address = fields[0]
+            # 获取测试到的速度
+            speed_url = fields[5].strip()
+
+        # 开启实时通知
+        if os.environ.get("PUSH_SWITCH") == "Y":
+            message.append(f"😍IP优选结果\n{ip_address} - {speed_url}")
+
+        if {speed_url} == "0.00":
+            return
+
+        # 更新DNS
+        cf_dns_update(os.environ.get("DOMAIN"), ip_address)
     except Exception as e:
-        print(f"cfYes优选异常:{e}")
+        print(f"IP优选异常{e}")
+
+
+def cfbest_optimal(message):
+    try:
+        # 读取文件内容
+        file_path = "/cloudflare/cf_result_1.txt"
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+            if len(lines) < 2:
+                return
+            # 获取第二行的数据
+            second_line = lines[1]
+            # 分割每个字段
+            fields = second_line.split(',')
+            # 获取 IP 地址
+            ip_address = fields[0]
+            # 获取测试到的速度
+            speed_url = fields[5].strip()
+
+        # 读取文件内容
+        # file_path2 = "/cloudflare/cf_result_0.txt"
+        # with open(file_path2, 'r') as f2:
+        #     lines2 = f2.readlines()
+        #     if len(lines2) < 2:
+        #         return
+        #     # 获取第二行的数据
+        #     second_line2 = lines2[1]
+        #     # 分割每个字段
+        #     fields2 = second_line2.split(',')
+        #     # 获取 IP 地址
+        #     ip_address2 = fields2[0]
+        #     # 获取测试到的速度
+        #     speed_url2 = fields2[5].strip()
+
+        # 打印提取到的IPv4地址及对应速度
+        # 开启实时通知
+        if os.environ.get("PUSH_SWITCH") == "Y":
+            message.append(f"😍cfBest优选结果\n{ip_address} - {speed_url}")
+            # message.append(f"😍cfBest优选结果\n{ip_address} - {speed_url}\n{ip_address2} - {speed_url2}")
+
+        # 更新DNS记录
+        if {speed_url} != "0.00":
+            cf_dns_update('cfbest.soapmans.eu.org', ip_address)
+        # if {speed_url2} != "0.00":
+        #     cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
+    except Exception as e:
+        print(f"cfBest优选异常:{e}")
 
 
 def my_task():
@@ -64,9 +132,17 @@ def my_task():
 
     print("---Running my task---\n")
 
-    print("---开始cfYes优选---")
-    cf_optimal(message)
-    print("---结束cfYes优选---\n")
+    print("---开始运行IP筛选脚本---")
+    optimal_ip(message)
+    print("---结束运行IP筛选脚本---\n")
+
+    print("---开始IP优选DNS---")
+    cfip_optimal(message)
+    print("---结束IP优选DNS---\n")
+
+    print("---开始cfBest优选---")
+    cfbest_optimal(message)
+    print("---结束cfBest优选---\n")
 
     print("---开始发送消息---")
     message_res = "\n".join(message)
