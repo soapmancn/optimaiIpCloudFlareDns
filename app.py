@@ -128,7 +128,7 @@ def cfbest_optimal(message):
 
 
 def my_task():
-    message = ["🎉优选IP已完成\n"]
+    message = ["🎉优选IP已完成(HOME)\n"]
 
     print("---Running my task---\n")
 
