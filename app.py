@@ -54,8 +54,7 @@ def cf_optimal(message):
 
             cf_dns_update(f"cfyes1.soapmans.eu.org", max_speed_ip)
             if os.environ.get("PUSH_SWITCH") == "Y":
-                data_ips_res = "\n".join(max_speed_ip)
-                message.append(f"😍cfyes优选结果\n{data_ips_res}")
+                message.append(f"😍cfyes优选结果\n{max_speed_ip}")
     except Exception as e:
         print(f"cfYes优选异常:{e}")
 
