@@ -6,19 +6,6 @@ WORKDIR /app
 
 # 将本地的 Python 脚本复制到容器中
 COPY app.py /app/
-COPY optimal_ip.sh /app/
-RUN chmod +x /app/optimal_ip.sh
-
-# 安装软件包
-RUN apt-get update && apt-get install -y \
-    unzip \
-    curl \
-    wget \
-    iproute2
-
-# 指定时区
-RUN apt-get update && apt-get install -y tzdata
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
 
 # 安装脚本所需的依赖
 RUN pip install --no-cache-dir croniter CloudFlare==2.19.4
