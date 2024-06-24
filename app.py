@@ -6,34 +6,7 @@ from croniter import croniter
 import time
 import subprocess
 from CloudFlare import CloudFlare
-import mysql.connector
 from datetime import datetime
-
-
-def insert_update(record_content, ip_address, speed_url):
-    try:
-        # 建立数据库连接
-        conn = mysql.connector.connect(
-            host=os.environ.get("MYSQLHOST"),
-            user=os.environ.get("MYSQLROOT"),
-            password=os.environ.get("MYSQLPASSWORD"),
-            database=os.environ.get("MYSQLDB")
-        )
-        # 创建游标对象
-        cursor = conn.cursor()
-        # 获取当前日期和时间
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # 插入一条记录
-        sql = "INSERT INTO cf_ips (update_date, previous_ip, updated_ip, speed_test) VALUES (%s, %s, %s, %s)"
-        values = (now, record_content, ip_address, speed_url + "MB/S")
-        cursor.execute(sql, values)
-        # 提交更改
-        conn.commit()
-        # 关闭游标和连接
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        print(f"Error executing insert_update: {e}")
 
 
 def send_telegram_message(bot_token, chat_id, message):
@@ -46,17 +19,6 @@ def send_telegram_message(bot_token, chat_id, message):
         response = requests.post(url, json=payload)
     except requests.exceptions.RequestException as e:
         print(f"发送消息异常: {e.response}")
-
-
-def optimal_ip(message):
-    # 定义要执行的 shell 命令或脚本
-    shell_command = "./optimal_ip.sh"
-
-    # 使用 subprocess 运行 shell 命令
-    try:
-        subprocess.run(shell_command, shell=True, check=True)
-    except subprocess.CalledProcessError as e:
-        message.append("😔IP筛选脚本运行异常")
 
 
 def cf_dns_update(subdomain, ip_address):
@@ -79,7 +41,7 @@ def cf_dns_update(subdomain, ip_address):
             break
 
 
-def cfyes_optimal(message):
+def cf_optimal(message):
     try:
         url = "https://api.hostmonit.com/get_optimization_ip"
         payload = {
@@ -87,114 +49,27 @@ def cfyes_optimal(message):
         }
         response = requests.post(url, json=payload)
         if response.status_code == 200:
-            parsed_data = json.loads(response.content)
-            data_ips = [node_info['ip'] for node_info in parsed_data['info'] if node_info['node'] == 'QYZJBGP']
-            cfyes_count = 1
-            for ip in data_ips:
-                cf_dns_update(f"cfyes{cfyes_count}.soapmans.eu.org", ip)
-                cfyes_count += 1
+            data = json.loads(response.content)
+            max_speed_ip = max((entry for entry in data['info']
+                                if entry['node'] == 'QYZJBGP' and entry['ip'].startswith('104')),
+                               key=lambda x: x['speed'])['ip']
+
+            cf_dns_update(f"cfyes1.soapmans.eu.org", max_speed_ip)
             if os.environ.get("PUSH_SWITCH") == "Y":
-                data_ips_res = "\n".join(data_ips)
+                data_ips_res = "\n".join(max_speed_ip)
                 message.append(f"😍cfyes优选结果\n{data_ips_res}")
     except Exception as e:
         print(f"cfYes优选异常:{e}")
-
-
-def cfbest_optimal(message):
-    try:
-        # 读取文件内容
-        file_path = "/cloudflare/cf_result_1.txt"
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
-            if len(lines) < 2:
-                return
-            # 获取第二行的数据
-            second_line = lines[1]
-            # 分割每个字段
-            fields = second_line.split(',')
-            # 获取 IP 地址
-            ip_address = fields[0]
-            # 获取测试到的速度
-            speed_url = fields[5].strip()
-
-        # 读取文件内容
-        file_path2 = "/cloudflare/cf_result_0.txt"
-        with open(file_path2, 'r') as f2:
-            lines2 = f2.readlines()
-            if len(lines2) < 2:
-                return
-            # 获取第二行的数据
-            second_line2 = lines2[1]
-            # 分割每个字段
-            fields2 = second_line2.split(',')
-            # 获取 IP 地址
-            ip_address2 = fields2[0]
-            # 获取测试到的速度
-            speed_url2 = fields2[5].strip()
-
-        # 打印提取到的IPv4地址及对应速度
-        # 开启实时通知
-        if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍cfBest优选结果\n{ip_address} - {speed_url}\n{ip_address2} - {speed_url2}")
-
-        # 更新DNS记录
-        if {speed_url} != "0.00":
-            cf_dns_update('cfbest.soapmans.eu.org', ip_address)
-        if {speed_url2} != "0.00":
-            cf_dns_update('cfbest80.soapmans.eu.org', ip_address2)
-    except Exception as e:
-        print(f"cfBest优选异常:{e}")
-
-
-def cfip_optimal(message):
-    try:
-        # 读取文件内容
-        file_path = "/cloudflare/cf_result.txt"
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
-            if len(lines) < 2:
-                return
-            # 获取第二行的数据
-            second_line = lines[1]
-            # 分割每个字段
-            fields = second_line.split(',')
-            # 获取 IP 地址
-            ip_address = fields[0]
-            # 获取测试到的速度
-            speed_url = fields[5].strip()
-
-        # 开启实时通知
-        if os.environ.get("PUSH_SWITCH") == "Y":
-            message.append(f"😍IP优选结果\n{ip_address} - {speed_url}")
-
-        if {speed_url} == "0.00":
-            return
-
-        # 更新DNS
-        cf_dns_update(os.environ.get("DOMAIN"), ip_address)
-    except Exception as e:
-        print(f"IP优选异常{e}")
 
 
 def my_task():
     message = ["🎉优选IP已完成\n"]
 
     print("---Running my task---\n")
-    print("---开始运行IP筛选脚本---")
-    optimal_ip(message)
-    print("---结束运行IP筛选脚本---\n")
 
     print("---开始cfYes优选---")
-    cfyes_optimal(message)
+    cf_optimal(message)
     print("---结束cfYes优选---\n")
-
-    print("---开始IP优选DNS---")
-    cfip_optimal(message)
-    print("---结束IP优选DNS---\n")
-
-    print("---开始cfBest优选---")
-    cfbest_optimal(message)
-    print("---结束cfBest优选---\n")
 
     print("---开始发送消息---")
     message_res = "\n".join(message)
