@@ -4,9 +4,7 @@ import os
 import requests
 from croniter import croniter
 import time
-import subprocess
 from CloudFlare import CloudFlare
-from datetime import datetime
 
 
 def send_telegram_message(bot_token, chat_id, message):
